@@ -1,0 +1,23 @@
+Metadata-Version: 2.1
+Name: pynterval
+Version: 0.1
+Summary: A small flexible interval package
+Home-page: https://github.com/HStry/pynterval
+Author: Hans Strijker
+License: UNKNOWN
+Project-URL: Bug Tracker, https://github.com/HStry/pynterval/issues
+Description: # pynterval
+        
+        A small python module to handle numeric intervals
+        
+        
+        
+Platform: UNKNOWN
+Classifier: Programming Language :: Python :: 3.6
+Classifier: License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)
+Classifier: Operating System :: OS Independent
+Classifier: Topic :: Scientific/Engineering :: Mathematics
+Classifier: Topic :: Scientific/Engineering :: Physics
+Classifier: Topic :: Utilities
+Requires-Python: >=3.6
+Description-Content-Type: text/markdown

@@ -1,0 +1,9 @@
+LICENSE
+README.md
+pyproject.toml
+setup.cfg
+src/pynterval/__init__.py
+src/pynterval.egg-info/PKG-INFO
+src/pynterval.egg-info/SOURCES.txt
+src/pynterval.egg-info/dependency_links.txt
+src/pynterval.egg-info/top_level.txt
