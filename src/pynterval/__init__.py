@@ -6,16 +6,49 @@ nan = float('nan')
 inf = float('inf')
 UNSET = object()
 
+def isnan(val):
+    return (val != val)
+
+def isinf(val):
+    try:
+        return math.isinf(val)
+    except Exception:
+        try:
+            return (val * inf == val)
+        except Exception:
+            return False
+
+def sign(val):
+    zval = 0 * val
+    return (val == zval) + 2 * (val > zval) - 1
+
+def ispos(val):
+    return sign(val) > 0
+
+def isneg(val):
+    return sign(val) < 0
+
 class Point(tuple):
-    def __new__(cls, val, offset):
+    __nan = False
+    __inf = False
+    def __new__(cls, val, offset: int=0):
         
-        if math.isnan(val):
+        offset = int(offset)
+        if offset not in (-1, 0, 1):
+            raise ValueError(f"Invalid offset '{offset}' not in (-1, 0, 1)")
+        
+        if isnan(val):
             self = super().__new__(cls, (nan, ))
             self.__val = val
+            self.__nan = True
         
-        elif math.isinf(val):
-            self = super().__new__(cls, (1 + (abs(val) == val) * 4 + offset, ))
+        elif isinf(val):
+            if sign(val) == sign(offset):
+                raise ValueError("Cannot offset beyond ±inf")
+            
+            self = super().__new__(cls, (3 + 2*sign(val) + offset, ))
             self.__val = val
+            self.__inf = True
         
         else:
             self = super().__new__(cls, (3, val, offset))
@@ -24,15 +57,30 @@ class Point(tuple):
     
     @classmethod
     def Left(cls, val, incl: bool = True):
-        if math.isinf(val) and abs(val) == val and not incl:
-            raise ValueError(f"impossible offset for value '{val}'")
         return cls(val, int(not incl))
     
     @classmethod
     def Right(cls, val, incl: bool = False):
-        if math.isinf(val) and abs(val) != val and not incl:
-            raise ValueError(f"impossible offset for value '{val}'")
         return cls(val, -int(not incl))
+    
+    def __repr__(self):
+        offset_char = ("\u207b", "", "\u207a")[self.offset + 1]
+        return f"{self.__class__.__name__}({self.value}{offset_char})"
+    
+    def __add__(self, other):
+        return self.__class__(self.value + other, self.offset)
+    
+    def __sub__(self, other):
+        return self.__class__(self.value - other, self.offset)
+    
+    def __mul__(self, other):
+        return self.__class__(self.value * other, self.offset)
+    
+    def __truediv__(self, other):
+        return self.__class__(self.value / other, self.offset)
+    
+    def __floordiv__(self, other):
+        return self.__class__(self.value // other, self.offset)
     
     @property
     def value(self):
@@ -41,15 +89,22 @@ class Point(tuple):
         except IndexError:
             return self.__val
     
+    @property
     def offset(self):
         try:
             return self[2]
         except IndexError:
+            if self.inf:
+                return (None, 0, 1, None, -1, 0)[self[0]]
             return 0
     
     @property
     def nan(self):
-        return math.isnan(self[0])
+        return self.__nan
+    
+    @property
+    def inf(self):
+        return self.__inf
 
 
 class Interval:
