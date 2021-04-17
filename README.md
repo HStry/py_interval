@@ -22,3 +22,19 @@ True
 Interval: {4}
 ```
 
+*** Works also with many other comparable objects
+```python
+>>> from pynterval import Interval
+>>> import pint
+>>> ureg = pint.UnitRegistry()
+>>> 
+>>> my_interval = Interval(0 * ureg.mm, 15 * ureg.cm)
+>>> (1 * ureg.inch) in my_interval
+True
+>>> 
+>>> my_rightopen_interval = Interval(100 * ureg.mm, float('inf'))
+>>> (5 * ureg.cm) in my_rightopen_interval
+False
+>>> (5 * ureg.lightyear) in my_rightopen_interval
+True
+```
