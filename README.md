@@ -22,7 +22,7 @@ True
 Interval: {4}
 ```
 
-*** Works also with many other comparable objects
+*** Works also with many other comparable objects ***
 ```python
 >>> from pynterval import Interval
 >>> import pint
