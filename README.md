@@ -32,9 +32,9 @@ Interval: {4}
 >>> (1 * ureg.inch) in my_interval
 True
 >>> 
->>> my_rightopen_interval = Interval(100 * ureg.mm, float('inf'))
->>> (5 * ureg.cm) in my_rightopen_interval
+>>> my_rightunbounded_interval = Interval(100 * ureg.mm, float('inf'))
+>>> (5 * ureg.cm) in my_rightunbounded_interval
 False
->>> (5 * ureg.lightyear) in my_rightopen_interval
+>>> (5 * ureg.lightyear) in my_rightunbounded_interval
 True
 ```
