@@ -1,41 +1,72 @@
 import math
-
+from typing import Any, Union
 __all__ = ['Interval']
 
 nan = float('nan')
 inf = float('inf')
 UNSET = object()
 
-def isnan(val):
-    return (val != val)
+def isnan(val: Any) -> bool:
+    "True if value is nan-like"
+    try:
+        return math.isnan(val)
+    except TypeError:
+        return (val != val)
 
-def isinf(val):
+def isinf(val: Any) -> bool:
+    "True if value evaluates to infinity"
     try:
         return math.isinf(val)
-    except Exception:
+    except TypeError:
         try:
             return (val * inf == val)
         except Exception:
             return False
 
-def sign(val):
+def sign(val: Any) -> int:
+    """Detects the sign of 'val'.
+    Returns -1, 0, 1 for negative, zero-like, and positive values respectively.
+    Will return 0 for nan.
+    """
+    if isnan(val):
+        return 0
+    if isinf(val):
+        return (abs(val) == val) * 2 - 1
+    
     zval = 0 * val
     return (val == zval) + 2 * (val > zval) - 1
 
-def ispos(val):
+def ispos(val: Any) -> bool:
+    "True if value is positive"
     return sign(val) > 0
 
-def isneg(val):
+def isneg(val: Any) -> bool:
+    "True if value is negative"
     return sign(val) < 0
+
+def value_typetest(val: Any) -> bool:
+    """Tests whether the provided value type has the required methods and
+    properties for Interval"""
+    # Maybe this is better done through abstract base classes, but 
+    try:
+        _ = isnan(val)
+        _ = isinf(val)
+        _ = sign(val)
+        _ = val < val
+        _ = val > val
+        
+        return True
+    except Exception:
+        return False
 
 class Point(tuple):
     __nan = False
     __inf = False
-    def __new__(cls, val, offset: int=0):
+    def __new__(cls, val: Any, offset: int=0) -> Point:
         
         offset = int(offset)
         if offset not in (-1, 0, 1):
-            raise ValueError(f"Invalid offset '{offset}' not in (-1, 0, 1)")
+            raise ValueError(f"Invalid offset '{offset}', not in (-1, 0, 1)")
         
         if isnan(val):
             self = super().__new__(cls, (nan, ))
@@ -56,41 +87,63 @@ class Point(tuple):
         return self
     
     @classmethod
-    def Left(cls, val, incl: bool = True):
+    def Left(cls, val: Any, incl: bool = True) -> Point:
+        "shorthand constructor for left endpoint"
         return cls(val, int(not incl))
     
     @classmethod
-    def Right(cls, val, incl: bool = False):
+    def Right(cls, val: Any, incl: bool = False) -> Point:
+        "shorthand constructor for right endpoint"
         return cls(val, -int(not incl))
     
-    def __repr__(self):
-        offset_char = ("\u207b", "", "\u207a")[self.offset + 1]
-        return f"{self.__class__.__name__}({self.value}{offset_char})"
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self})"
     
-    def __add__(self, other):
+    def __str__(self) -> str:
+        return self.__format__('')
+    
+    def __format__(self, spec: str) -> str:
+        div = ':'
+        spec_options = {'sup':  ("\u207b", "\u207c", "\u207a"),
+                        'base': ('-', '=', '+'),
+                        'sub':  ("\u208b", "\u208c", "\u208a")}
+        spec_default = 'sup'
+        
+        vspec, *(ospec, *_) = spec.rsplit(div, 1) + ['']
+        if vspec in spec_options:
+            vspec, ospec = '', vspec
+        
+        if not ospec:
+            ospec = spec_default
+        
+        return f"{self.value:{vspec}}{spec_options[ospec][self.offset + 1]}"
+    
+    def __add__(self, other: Any) -> Point:
         return self.__class__(self.value + other, self.offset)
     
-    def __sub__(self, other):
+    def __sub__(self, other: Any) -> Point:
         return self.__class__(self.value - other, self.offset)
     
-    def __mul__(self, other):
+    def __mul__(self, other: Any) -> Point:
         return self.__class__(self.value * other, self.offset)
     
-    def __truediv__(self, other):
+    def __truediv__(self, other: Any) -> Point:
         return self.__class__(self.value / other, self.offset)
     
-    def __floordiv__(self, other):
+    def __floordiv__(self, other: Any) -> Point:
         return self.__class__(self.value // other, self.offset)
     
     @property
-    def value(self):
+    def value(self) -> Any:
+        "returns the value"
         try:
             return self[1]
         except IndexError:
             return self.__val
     
     @property
-    def offset(self):
+    def offset(self) -> int:
+        "returns the infinitessimal offset (-1, 0, 1) from the value"
         try:
             return self[2]
         except IndexError:
@@ -99,11 +152,13 @@ class Point(tuple):
             return 0
     
     @property
-    def nan(self):
+    def nan(self) -> bool:
+        "True if a value is a nan value"
         return self.__nan
     
     @property
-    def inf(self):
+    def inf(self) -> bool:
+        "True if value is an infinite"
         return self.__inf
 
 
@@ -116,7 +171,9 @@ class Interval:
     __proper = False
     __bool   = True
     
-    def __init__(self, v_min=UNSET, v_max=UNSET, endstate=UNSET, /):
+    def __init__(self, v_min: Any=UNSET,
+                       v_max: Any=UNSET,
+                       endstate: int=UNSET, /) -> None:
         
         if v_min is UNSET:
             self.__empty = True
@@ -135,7 +192,7 @@ class Interval:
         self.__sanitize()
     
     @classmethod
-    def __pts(cls, a, b):
+    def __pts(cls, a: Point, b: Point) -> Interval:
         self = cls()
         del(self.__empty)
         self.__min = a
@@ -143,7 +200,7 @@ class Interval:
         self.__sanitize()
         return self
     
-    def __sanitize(self):
+    def __sanitize(self) -> None:
         if self.__min.nan or self.__max.nan:
             del(self.__min, self.__max)
             self.__nan  = True
@@ -160,7 +217,7 @@ class Interval:
         else:
             self.__proper = True
     
-    def __repr__(self):
+    def __repr__(self) -> str:
         if self.nan:
             return f"{self.__class__.__name__}(nan)"
         if self.empty:
@@ -172,10 +229,12 @@ class Interval:
                 f"{self.min.value}, {self.max.value}"
                 f"{'])'[bool(self.max.offset)]}")
     
-    def __bool__(self):
+    def __bool__(self) -> bool:
+        "True if interval is degenerate or proper"
         return self.__bool
     
-    def __contains__(self, other):
+    def __contains__(self, other: Any) -> bool:
+        "True if other value or interval is fully contained within interval"
         if not isinstance(other, self.__class__):
             other = self.__class__(other)
         
@@ -183,17 +242,18 @@ class Interval:
                 self.min <= other.min and
                 self.max >= other.max)
     
-    def __overlap(self, other):
+    def _overlap(self, other: Interval) -> bool:
         return (self and other and
                 self.min <= other.max and
                 self.max >= other.min)
     
-    def __continuous(self, other):
+    def _continuous(self, other: Interval) -> bool:
         return (self and other and
                 self.max.value == other.min.value and
                 bool(self.max.offset) != bool(other.min.offset))
     
-    def __and__(self, other):
+    def __and__(self, other: Any) -> Interval:
+        "Returns intersection of interval and other value or interval"
         if not isinstance(other, self.__class__):
             other = self.__class__(other)
         
@@ -203,46 +263,57 @@ class Interval:
         
         return self.__class__()
         
-    def __or__(self, other):
+    def __or__(self, other: Any) -> Interval:
+        "Returns union of interval and other value or interval"
         if not isinstance(other, self.__class__):
             other = self.__class__(other)
         
         if (self and other and
-            (self.__overlap(other) or
-             self.__continuous(other) or
-             other.__continuous(self))):
+            (self._overlap(other) or
+             self._continuous(other) or
+             other._continuous(self))):
             return self.__pts(min(self.min, other.min),
                               max(self.max, other.max))
         
         return self.__class__()
     
-    def overlap(self, other):
+    def overlap(self, other: Any) -> bool:
+        "True if overlap exists between interval and other value or interval"
         if not isinstance(other, self.__class__):
             other = self.__class__(other)
-        return self.__overlap(other)
+        return self._overlap(other)
     
-    def continuous(self, other):
+    def continuous(self, other: Any) -> int:
+        """Checks whether interval is exactly continuous with other interval or
+        value, and in which orientation."""
         if not isinstance(other, self.__class__):
             other = self.__class__(other)
-        return self.__continuous(other)
+        
+        return int(self._continuous(other)) or (-1 * other._continuous(self))
     
     @property
-    def min(self):
+    def min(self) -> Point:
+        "Returns Point instance representing the lower interval endpoint"
         return self.__min
     @property
-    def max(self):
+    def max(self) -> Point:
+        "Returns Point instance representing the upper interval endpoint"
         return self.__max
     
     @property
-    def nan(self):
+    def nan(self) -> bool:
+        "True if interval constructed with a nan value"
         return self.__nan
     @property
-    def empty(self):
+    def empty(self) -> bool:
+        "True if interval is empty"
         return self.__empty
     @property
-    def degenerate(self):
+    def degenerate(self) -> bool:
+        "True if interval contains exactly one value"
         return self.__degen
     @property
-    def proper(self):
+    def proper(self) -> bool:
+        "True if interval spans a range"
         return self.__proper
 
